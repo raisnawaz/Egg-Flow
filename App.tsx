@@ -4,16 +4,19 @@ import { DataProvider, useData } from './services/dataContext';
 import { Card, Button, Input, Select, Badge, Modal, DeleteButton } from './components/UIComponents';
 import { Reports } from './components/Reports';
 import { Account, AccountType, TransactionType, Transaction, EggCollection, FeedTransaction, InvoiceItem } from './types';
-import { LayoutDashboard, Users, ShoppingCart, DollarSign, Sprout, Settings as SettingsIcon, Egg, Menu, X, Printer, Trash2, Plus, BookOpen, Wallet, Download, Briefcase, Calendar, Archive, Edit2, Upload, TrendingUp, TrendingDown } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, DollarSign, Sprout, Settings as SettingsIcon, Egg, Menu, X, Printer, Trash2, Plus, BookOpen, Wallet, Download, Briefcase, Calendar, Archive, Edit2, Upload, TrendingUp, TrendingDown, Sparkles, Loader2 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { ComposedChart, Line, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
+import { GoogleGenAI } from "@google/genai";
 
 // --- Sub-Components for Views ---
 
 const Dashboard: React.FC = () => {
-    const { eggCollections, transactions, feedTransactions, settings } = useData();
+    const { eggCollections, transactions, feedTransactions, settings, accounts } = useData();
     const todayStr = new Date().toISOString().split('T')[0];
+    const [insight, setInsight] = useState<string | null>(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
 
     // --- CALCULATIONS ---
 
@@ -124,6 +127,75 @@ const Dashboard: React.FC = () => {
     }, [transactions]);
 
 
+    const generateInsights = async () => {
+        setIsAnalyzing(true);
+        try {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+            
+            // Prepare Data Summary for AI
+            const last30Days = new Date();
+            last30Days.setDate(last30Days.getDate() - 30);
+            const dateStr = last30Days.toISOString().split('T')[0];
+
+            // 1. Production Stats
+            const recentCollections = eggCollections.filter(c => c.date >= dateStr);
+            const totalCollected = recentCollections.reduce((acc, c) => acc + c.collected, 0);
+            const totalWasted = recentCollections.reduce((acc, c) => acc + c.wasted, 0);
+            const avgDaily = totalCollected / (recentCollections.length || 1);
+            const wasteRate = (totalWasted / (totalCollected || 1)) * 100;
+
+            // 2. Sales Stats
+            const recentSales = transactions.filter(t => t.type === TransactionType.SALE && t.date >= dateStr);
+            const totalRevenue = recentSales.reduce((acc, t) => acc + t.amount, 0);
+
+            // 3. Customer Analysis
+            const customers = accounts.filter(a => a.type === AccountType.CUSTOMER && !a.archived);
+            const inactiveCustomers: string[] = [];
+            
+            customers.forEach(cust => {
+                const lastTxn = transactions
+                    .filter(t => t.accountId === cust.id && t.type === TransactionType.SALE)
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+                
+                if (!lastTxn || lastTxn.date < dateStr) {
+                    inactiveCustomers.push(cust.name);
+                }
+            });
+
+            const prompt = `
+                Act as an expert farm consultant. Analyze this Egg Farm data for the last 30 days:
+                
+                - Total Eggs Collected: ${totalCollected}
+                - Average Daily Collection: ${avgDaily.toFixed(0)}
+                - Wastage Rate: ${wasteRate.toFixed(2)}% (Industry standard is 1-2%)
+                - Total Revenue: ${settings.currency}${totalRevenue}
+                - Total Active Customers: ${customers.length}
+                - Inactive Customers (No Purchase in 30 days): ${inactiveCustomers.join(', ') || 'None'}
+
+                Provide a concise response with 3 headings:
+                1. 🥚 **Production Insight**: Comment on efficiency and wastage.
+                2. 💰 **Sales Trend**: Comment on revenue health.
+                3. ⚠️ **Customer Alert**: Specifically list the inactive customers and suggest a quick action to win them back.
+                
+                Keep it brief, professional, and actionable. Do not use markdown for the headers, just bold them.
+            `;
+
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: prompt,
+            });
+
+            setInsight(response.text);
+
+        } catch (error) {
+            console.error(error);
+            setInsight("Failed to generate insight. Please check your connection.");
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
+
+
     const StatRow = ({ label, value, isCurrency = false, colorClass = "text-white" }: { label: string, value: number, isCurrency?: boolean, colorClass?: string }) => (
         <div className="flex justify-between items-center py-2 border-b border-white/5 last:border-0">
             <span className="text-white/60 text-sm">{label}</span>
@@ -137,6 +209,46 @@ const Dashboard: React.FC = () => {
     return (
         <div className="space-y-8 animate-in fade-in zoom-in duration-300">
             
+            {/* AI Insight Section */}
+            <Card className="bg-gradient-to-r from-violet-900/60 to-fuchsia-900/60 border-purple-500/30">
+                <div className="flex flex-col md:flex-row gap-6 items-start">
+                    <div className="p-4 bg-purple-500/20 rounded-2xl shadow-[0_0_20px_rgba(168,85,247,0.2)]">
+                        <Sparkles size={32} className="text-purple-300" />
+                    </div>
+                    <div className="flex-1 w-full">
+                        <div className="flex justify-between items-center mb-2">
+                            <h3 className="text-xl font-bold text-white">AI Farm Analyst</h3>
+                            {!insight && (
+                                <Button onClick={generateInsights} disabled={isAnalyzing} className="bg-white/10 hover:bg-white/20 text-sm py-1 px-3">
+                                    {isAnalyzing ? <Loader2 className="animate-spin" size={16} /> : 'Analyze Data'}
+                                </Button>
+                            )}
+                        </div>
+                        
+                        {!insight && !isAnalyzing && (
+                            <p className="text-white/60 text-sm">Click analyze to generate insights on Production, Sales, and Customer Retention (Inactive Customers).</p>
+                        )}
+
+                        {isAnalyzing && (
+                            <div className="space-y-3 animate-pulse mt-4">
+                                <div className="h-4 bg-white/10 rounded w-3/4"></div>
+                                <div className="h-4 bg-white/10 rounded w-1/2"></div>
+                                <div className="h-4 bg-white/10 rounded w-full"></div>
+                            </div>
+                        )}
+
+                        {insight && (
+                            <div className="mt-2 text-white/90 text-sm leading-relaxed whitespace-pre-line p-4 bg-black/20 rounded-xl border border-white/5">
+                                {insight}
+                                <div className="mt-4 flex justify-end">
+                                    <button onClick={() => setInsight(null)} className="text-xs text-white/40 hover:text-white underline">Refresh Analysis</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </Card>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 
                 {/* TODAY'S STOCK */}
