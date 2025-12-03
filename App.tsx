@@ -348,7 +348,7 @@ const InvoiceManager: React.FC = () => {
         items: [],
         amount: 0 
     });
-    const [currentItem, setCurrentItem] = useState<InvoiceItem>({ description: 'Eggs (Tray)', quantity: 1, unitPrice: 0, total: 0 });
+    const [currentItem, setCurrentItem] = useState<InvoiceItem>({ description: 'Eggs', quantity: 1, unitPrice: 0, total: 0 });
 
     const addItem = () => {
         const itemTotal = currentItem.quantity * currentItem.unitPrice;
@@ -359,7 +359,7 @@ const InvoiceManager: React.FC = () => {
             items: updatedItems,
             amount: updatedItems.reduce((acc, i) => acc + i.total, 0)
         });
-        setCurrentItem({ description: 'Eggs (Tray)', quantity: 1, unitPrice: 0, total: 0 });
+        setCurrentItem({ description: 'Eggs', quantity: 1, unitPrice: 0, total: 0 });
     };
 
     const removeItem = (idx: number) => {

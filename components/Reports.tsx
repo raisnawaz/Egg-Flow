@@ -122,12 +122,35 @@ export const Reports: React.FC = () => {
   };
 
   const shareWhatsApp = () => {
-    const text = `*${settings.farmName} Report (${dateRange.start} to ${dateRange.end})*%0A%0A` +
-        `🥚 *Egg Production*%0AOpening: ${reportData.eggs.opening}%0ACollected: ${reportData.eggs.collected}%0AWasted: ${reportData.eggs.wasted}%0ASold: ${reportData.eggs.sold}%0AClosing Stock: ${reportData.eggs.closing}%0A%0A` +
-        `🌾 *Feed & Nutrition*%0APurchased: ${reportData.feed.purchased}kg%0AConsumed: ${reportData.feed.consumed}kg%0AInventory: ${reportData.feed.closing}kg%0A%0A` +
-        `💵 *Cash Flow*%0AOpening Cash: ${settings.currency}${reportData.cash.opening}%0ACash In: ${settings.currency}${reportData.cash.in}%0ACash Out: ${settings.currency}${reportData.cash.out}%0AWithdrawals: ${settings.currency}${reportData.cash.withdrawn}%0AClosing Cash: ${settings.currency}${reportData.cash.closing}`;
-    
-    window.open(`https://wa.me/?text=${text}`, '_blank');
+    // Construct the message line by line to ensure clean formatting
+    const lines = [
+        `📊 *${settings.farmName.toUpperCase()} REPORT*`,
+        `📅 Period: ${dateRange.start} to ${dateRange.end}`,
+        "",
+        "🥚 *EGG PRODUCTION*",
+        `• Opening Stock: ${reportData.eggs.opening}`,
+        `• Collected: ${reportData.eggs.collected}`,
+        `• Wasted: ${reportData.eggs.wasted}`,
+        `• Sold: ${reportData.eggs.sold}`,
+        `• Closing Stock: ${reportData.eggs.closing}`,
+        "",
+        "🌾 *FEED INVENTORY*",
+        `• Purchased: ${reportData.feed.purchased} kg`,
+        `• Consumed: ${reportData.feed.consumed} kg`,
+        `• Wasted: ${reportData.feed.wasted} kg`,
+        `• Closing Stock: ${reportData.feed.closing} kg`,
+        "",
+        "💵 *CASH FLOW*",
+        `• Opening Cash: ${settings.currency}${reportData.cash.opening.toFixed(2)}`,
+        `• Cash In: ${settings.currency}${reportData.cash.in.toFixed(2)}`,
+        `• Cash Out: ${settings.currency}${reportData.cash.out.toFixed(2)}`,
+        `• Withdrawals: ${settings.currency}${reportData.cash.withdrawn.toFixed(2)}`,
+        `• Closing Cash: ${settings.currency}${reportData.cash.closing.toFixed(2)}`
+    ];
+
+    const message = lines.join("\n");
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
   };
 
   return (
