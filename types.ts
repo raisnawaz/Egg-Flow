@@ -54,25 +54,14 @@ export interface EggCollection {
   notes?: string;
 }
 
-export interface FeedTransaction {
-  id: string;
-  date: string;
-  type: 'Purchase' | 'Consume' | 'Waste';
-  quantity: number; // in kg or bags
-  cost?: number; // Only for purchase
-  vendorId?: string; // For purchase
-  notes?: string;
-}
-
 export interface AppState {
   accounts: Account[];
   transactions: Transaction[];
   eggCollections: EggCollection[];
-  feedTransactions: FeedTransaction[];
   settings: {
     currency: string;
     farmName: string;
-    theme: 'stained-glass' | 'minimal';
+    theme: 'stained-glass' | 'windows-xp' | 'android-16';
   };
 }
 

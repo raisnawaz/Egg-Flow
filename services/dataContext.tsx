@@ -1,13 +1,13 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Account, AppState, EggCollection, FeedTransaction, Transaction, TransactionType, AccountType } from '../types';
+import { Account, AppState, EggCollection, Transaction, TransactionType, AccountType } from '../types';
 
 const INITIAL_STATE: AppState = {
   accounts: [],
   transactions: [],
   eggCollections: [],
-  feedTransactions: [],
   settings: {
-    currency: '$',
+    currency: 'PKR',
     farmName: 'My Egg Farm',
     theme: 'stained-glass',
   },
@@ -24,12 +24,10 @@ interface DataContextType extends AppState {
   addEggCollection: (collection: Omit<EggCollection, 'id'>) => void;
   deleteEggCollection: (id: string) => void;
   
-  addFeedTransaction: (transaction: Omit<FeedTransaction, 'id'>) => void;
-  deleteFeedTransaction: (id: string) => void;
-
   importData: (data: string) => void;
   exportData: () => string;
   resetData: () => void;
+  updateSettings: (settings: Partial<AppState['settings']>) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -41,7 +39,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const saved = localStorage.getItem('eggflow_data');
     if (saved) {
       try {
-        setState(JSON.parse(saved));
+        const parsedData = JSON.parse(saved);
+        // Ensure legacy data doesn't break new state shape
+        const { feedTransactions, ...cleanData } = parsedData; 
+        
+        // Merge with initial state to ensure new fields (like theme) exist
+        setState(prev => ({
+            ...INITIAL_STATE,
+            ...cleanData,
+            settings: { ...INITIAL_STATE.settings, ...cleanData.settings }
+        }));
       } catch (e) {
         console.error("Failed to load data", e);
       }
@@ -82,18 +89,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setState(prev => ({ ...prev, eggCollections: prev.eggCollections.filter(c => c.id !== id) }));
   };
 
-  const addFeedTransaction = (transaction: Omit<FeedTransaction, 'id'>) => {
-    setState(prev => ({ ...prev, feedTransactions: [...prev.feedTransactions, { ...transaction, id: generateId() }] }));
-  };
-
-  const deleteFeedTransaction = (id: string) => {
-    setState(prev => ({ ...prev, feedTransactions: prev.feedTransactions.filter(t => t.id !== id) }));
-  };
-
   const importData = (json: string) => {
     try {
       const parsed = JSON.parse(json);
-      setState(parsed);
+      const { feedTransactions, ...cleanData } = parsed;
+      setState(cleanData);
     } catch (e) {
       alert("Invalid JSON data");
     }
@@ -102,6 +102,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const exportData = () => JSON.stringify(state, null, 2);
 
   const resetData = () => setState(INITIAL_STATE);
+
+  const updateSettings = (newSettings: Partial<AppState['settings']>) => {
+      setState(prev => ({ ...prev, settings: { ...prev.settings, ...newSettings } }));
+  };
 
   return (
     <DataContext.Provider value={{
@@ -113,11 +117,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       deleteTransaction,
       addEggCollection,
       deleteEggCollection,
-      addFeedTransaction,
-      deleteFeedTransaction,
       importData,
       exportData,
-      resetData
+      resetData,
+      updateSettings
     }}>
       {children}
     </DataContext.Provider>

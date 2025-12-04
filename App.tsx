@@ -1,10 +1,9 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { DataProvider, useData } from './services/dataContext';
 import { Card, Button, Input, Select, Badge, Modal, DeleteButton } from './components/UIComponents';
 import { Reports } from './components/Reports';
-import { Account, AccountType, TransactionType, Transaction, EggCollection, FeedTransaction, InvoiceItem } from './types';
-import { LayoutDashboard, Users, ShoppingCart, DollarSign, Sprout, Settings as SettingsIcon, Egg, Menu, X, Printer, Trash2, Plus, BookOpen, Wallet, Download, Briefcase, Calendar, Archive, Edit2, Upload, TrendingUp, TrendingDown, Sparkles, Loader2 } from 'lucide-react';
+import { Account, AccountType, TransactionType, Transaction, EggCollection, InvoiceItem } from './types';
+import { LayoutDashboard, Users, ShoppingCart, DollarSign, Settings as SettingsIcon, Egg, Menu, X, Printer, Trash2, Plus, BookOpen, Wallet, Download, Briefcase, Calendar, Archive, Edit2, Upload, TrendingUp, TrendingDown, Sparkles, Loader2, Monitor, Smartphone, Grid } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { ComposedChart, Line, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
@@ -13,7 +12,7 @@ import { GoogleGenAI } from "@google/genai";
 // --- Sub-Components for Views ---
 
 const Dashboard: React.FC = () => {
-    const { eggCollections, transactions, feedTransactions, settings, accounts } = useData();
+    const { eggCollections, transactions, settings, accounts } = useData();
     const todayStr = new Date().toISOString().split('T')[0];
     const [insight, setInsight] = useState<string | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -42,17 +41,7 @@ const Dashboard: React.FC = () => {
 
         const eggClosing = eggOpening + todayCollected - todayEggWasted - todaySold;
 
-        // 2. FEED INVENTORY
-        const totalFeedPurchased = feedTransactions.filter(t => t.type === 'Purchase').reduce((acc, t) => acc + t.quantity, 0);
-        const totalFeedConsumed = feedTransactions.filter(t => t.type === 'Consume').reduce((acc, t) => acc + t.quantity, 0);
-        const totalFeedWasted = feedTransactions.filter(t => t.type === 'Waste').reduce((acc, t) => acc + t.quantity, 0);
-        const feedRemaining = totalFeedPurchased - totalFeedConsumed - totalFeedWasted;
-
-        const todayFeedPurchased = feedTransactions.filter(t => t.type === 'Purchase' && isToday(t.date)).reduce((acc, t) => acc + t.quantity, 0);
-        const todayFeedConsumed = feedTransactions.filter(t => t.type === 'Consume' && isToday(t.date)).reduce((acc, t) => acc + t.quantity, 0);
-        const todayFeedWasted = feedTransactions.filter(t => t.type === 'Waste' && isToday(t.date)).reduce((acc, t) => acc + t.quantity, 0);
-
-        // 3. CASH FLOW
+        // 2. CASH FLOW
         const prevIn = transactions.filter(t => isBeforeToday(t.date) && [TransactionType.SALE, TransactionType.RECEIPT, TransactionType.DEPOSIT].includes(t.type)).reduce((acc, t) => acc + t.amount, 0);
         const prevOut = transactions.filter(t => isBeforeToday(t.date) && [TransactionType.EXPENSE, TransactionType.PAYMENT, TransactionType.PURCHASE, TransactionType.WITHDRAWAL].includes(t.type)).reduce((acc, t) => acc + t.amount, 0);
         
@@ -66,11 +55,10 @@ const Dashboard: React.FC = () => {
 
         return {
             egg: { opening: eggOpening, collected: todayCollected, wasted: todayEggWasted, sold: todaySold, closing: eggClosing },
-            feed: { remaining: feedRemaining, purchased: todayFeedPurchased, consumed: todayFeedConsumed, wasted: todayFeedWasted },
             cash: { opening: cashOpening, in: todayIn, out: todayOutOps, withdrawals: todayWithdrawals, closing: cashClosing }
         };
 
-    }, [eggCollections, transactions, feedTransactions, todayStr]);
+    }, [eggCollections, transactions, todayStr]);
 
     // --- Income vs Expense Graph Logic ---
     const incomeExpenseData = useMemo(() => {
@@ -196,9 +184,9 @@ const Dashboard: React.FC = () => {
     };
 
 
-    const StatRow = ({ label, value, isCurrency = false, colorClass = "text-white" }: { label: string, value: number, isCurrency?: boolean, colorClass?: string }) => (
-        <div className="flex justify-between items-center py-2 border-b border-white/5 last:border-0">
-            <span className="text-white/60 text-sm">{label}</span>
+    const StatRow = ({ label, value, isCurrency = false, colorClass = "text-theme-base" }: { label: string, value: number, isCurrency?: boolean, colorClass?: string }) => (
+        <div className="flex justify-between items-center py-2 border-b border-theme-border last:border-0">
+            <span className="text-theme-muted text-sm">{label}</span>
             <span className={`font-mono font-medium ${colorClass}`}>
                 {isCurrency ? settings.currency : ''}{value.toLocaleString(undefined, { minimumFractionDigits: isCurrency ? 2 : 0, maximumFractionDigits: 2 })}
                 {!isCurrency && ''}
@@ -210,38 +198,38 @@ const Dashboard: React.FC = () => {
         <div className="space-y-8 animate-in fade-in zoom-in duration-300">
             
             {/* AI Insight Section */}
-            <Card className="bg-gradient-to-r from-violet-900/60 to-fuchsia-900/60 border-purple-500/30">
+            <Card className="bg-gradient-to-r from-violet-900/20 to-fuchsia-900/20 border-purple-500/30">
                 <div className="flex flex-col md:flex-row gap-6 items-start">
                     <div className="p-4 bg-purple-500/20 rounded-2xl shadow-[0_0_20px_rgba(168,85,247,0.2)]">
-                        <Sparkles size={32} className="text-purple-300" />
+                        <Sparkles size={32} className="text-purple-400" />
                     </div>
                     <div className="flex-1 w-full">
                         <div className="flex justify-between items-center mb-2">
-                            <h3 className="text-xl font-bold text-white">AI Farm Analyst</h3>
+                            <h3 className="text-xl font-bold text-theme-base">AI Farm Analyst</h3>
                             {!insight && (
-                                <Button onClick={generateInsights} disabled={isAnalyzing} className="bg-white/10 hover:bg-white/20 text-sm py-1 px-3">
+                                <Button onClick={generateInsights} disabled={isAnalyzing} className="bg-theme-surface hover:bg-theme-border text-sm py-1 px-3">
                                     {isAnalyzing ? <Loader2 className="animate-spin" size={16} /> : 'Analyze Data'}
                                 </Button>
                             )}
                         </div>
                         
                         {!insight && !isAnalyzing && (
-                            <p className="text-white/60 text-sm">Click analyze to generate insights on Production, Sales, and Customer Retention (Inactive Customers).</p>
+                            <p className="text-theme-muted text-sm">Click analyze to generate insights on Production, Sales, and Customer Retention (Inactive Customers).</p>
                         )}
 
                         {isAnalyzing && (
                             <div className="space-y-3 animate-pulse mt-4">
-                                <div className="h-4 bg-white/10 rounded w-3/4"></div>
-                                <div className="h-4 bg-white/10 rounded w-1/2"></div>
-                                <div className="h-4 bg-white/10 rounded w-full"></div>
+                                <div className="h-4 bg-theme-muted/20 rounded w-3/4"></div>
+                                <div className="h-4 bg-theme-muted/20 rounded w-1/2"></div>
+                                <div className="h-4 bg-theme-muted/20 rounded w-full"></div>
                             </div>
                         )}
 
                         {insight && (
-                            <div className="mt-2 text-white/90 text-sm leading-relaxed whitespace-pre-line p-4 bg-black/20 rounded-xl border border-white/5">
+                            <div className="mt-2 text-theme-base text-sm leading-relaxed whitespace-pre-line p-4 bg-theme-surface rounded-xl border border-theme-border">
                                 {insight}
                                 <div className="mt-4 flex justify-end">
-                                    <button onClick={() => setInsight(null)} className="text-xs text-white/40 hover:text-white underline">Refresh Analysis</button>
+                                    <button onClick={() => setInsight(null)} className="text-xs text-theme-muted hover:text-theme-base underline">Refresh Analysis</button>
                                 </div>
                             </div>
                         )}
@@ -249,57 +237,38 @@ const Dashboard: React.FC = () => {
                 </div>
             </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
                 {/* TODAY'S STOCK */}
-                <Card className="bg-gradient-to-br from-yellow-900/40 to-orange-900/40 border-orange-500/20">
+                <Card className="border-orange-500/20">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-yellow-500/20 rounded-lg"><Egg className="text-yellow-400" size={24} /></div>
-                        <h3 className="text-lg font-semibold text-yellow-100">Today's Egg Stock</h3>
+                        <div className="p-2 bg-yellow-500/20 rounded-lg"><Egg className="text-yellow-500" size={24} /></div>
+                        <h3 className="text-lg font-semibold text-theme-base">Today's Egg Stock</h3>
                     </div>
                     <div className="space-y-1">
                         <StatRow label="Opening Stock" value={stats.egg.opening} />
-                        <StatRow label="Collected" value={stats.egg.collected} colorClass="text-green-400" />
-                        <StatRow label="Wasted" value={stats.egg.wasted} colorClass="text-red-400" />
-                        <StatRow label="Sold" value={stats.egg.sold} colorClass="text-blue-400" />
-                        <div className="pt-2 mt-2 border-t border-white/10">
-                            <StatRow label="Closing Stock" value={stats.egg.closing} colorClass="text-yellow-400 font-bold text-lg" />
-                        </div>
-                    </div>
-                </Card>
-
-                {/* FEED INVENTORY */}
-                <Card className="bg-gradient-to-br from-emerald-900/40 to-teal-900/40 border-teal-500/20">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-emerald-500/20 rounded-lg"><Sprout className="text-emerald-400" size={24} /></div>
-                        <h3 className="text-lg font-semibold text-emerald-100">Feed Inventory</h3>
-                    </div>
-                     <div className="space-y-1">
-                        <StatRow label="Purchased (Today)" value={stats.feed.purchased} />
-                        <StatRow label="Consumed (Today)" value={stats.feed.consumed} colorClass="text-orange-300" />
-                        <StatRow label="Wasted (Today)" value={stats.feed.wasted} colorClass="text-red-400" />
-                        <div className="pt-2 mt-2 border-t border-white/10">
-                             <div className="flex justify-between items-center py-2">
-                                <span className="text-white/60 text-sm">Remaining Stock</span>
-                                <span className="font-mono font-bold text-lg text-emerald-400">{stats.feed.remaining.toLocaleString()} kg</span>
-                            </div>
+                        <StatRow label="Collected" value={stats.egg.collected} colorClass="text-green-500" />
+                        <StatRow label="Wasted" value={stats.egg.wasted} colorClass="text-red-500" />
+                        <StatRow label="Sold" value={stats.egg.sold} colorClass="text-blue-500" />
+                        <div className="pt-2 mt-2 border-t border-theme-border">
+                            <StatRow label="Closing Stock" value={stats.egg.closing} colorClass="text-yellow-600 font-bold text-lg" />
                         </div>
                     </div>
                 </Card>
 
                 {/* CASH FLOW */}
-                <Card className="bg-gradient-to-br from-blue-900/40 to-indigo-900/40 border-blue-500/20">
+                <Card className="border-blue-500/20">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-blue-500/20 rounded-lg"><Wallet className="text-blue-400" size={24} /></div>
-                        <h3 className="text-lg font-semibold text-blue-100">Today's Cash Flow</h3>
+                        <div className="p-2 bg-blue-500/20 rounded-lg"><Wallet className="text-blue-500" size={24} /></div>
+                        <h3 className="text-lg font-semibold text-theme-base">Today's Cash Flow</h3>
                     </div>
                     <div className="space-y-1">
                         <StatRow label="Opening Cash" value={stats.cash.opening} isCurrency />
-                        <StatRow label="Cash In" value={stats.cash.in} isCurrency colorClass="text-green-400" />
-                        <StatRow label="Cash Out" value={stats.cash.out} isCurrency colorClass="text-red-400" />
-                        <StatRow label="Withdrawals" value={stats.cash.withdrawals} isCurrency colorClass="text-purple-400" />
-                        <div className="pt-2 mt-2 border-t border-white/10">
-                            <StatRow label="Closing Cash" value={stats.cash.closing} isCurrency colorClass="text-blue-300 font-bold text-lg" />
+                        <StatRow label="Cash In" value={stats.cash.in} isCurrency colorClass="text-green-500" />
+                        <StatRow label="Cash Out" value={stats.cash.out} isCurrency colorClass="text-red-500" />
+                        <StatRow label="Withdrawals" value={stats.cash.withdrawals} isCurrency colorClass="text-purple-500" />
+                        <div className="pt-2 mt-2 border-t border-theme-border">
+                            <StatRow label="Closing Cash" value={stats.cash.closing} isCurrency colorClass="text-blue-500 font-bold text-lg" />
                         </div>
                     </div>
                 </Card>
@@ -310,11 +279,11 @@ const Dashboard: React.FC = () => {
                 <div className="h-80 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart data={incomeExpenseData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
-                            <XAxis dataKey="date" stroke="rgba(255,255,255,0.5)" tick={{fill: 'rgba(255,255,255,0.7)', fontSize: 12}} />
-                            <YAxis stroke="rgba(255,255,255,0.5)" tick={{fill: 'rgba(255,255,255,0.7)', fontSize: 12}} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.2)" vertical={false} />
+                            <XAxis dataKey="date" stroke="currentColor" tick={{fill: 'currentColor', fontSize: 12, opacity: 0.6}} />
+                            <YAxis stroke="currentColor" tick={{fill: 'currentColor', fontSize: 12, opacity: 0.6}} />
                             <Tooltip 
-                                contentStyle={{ backgroundColor: 'rgba(20, 20, 30, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
+                                contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-base)' }}
                             />
                             <Legend />
                             <Bar dataKey="income" name="Income" fill="#22c55e" barSize={10} radius={[4, 4, 0, 0]} fillOpacity={0.6} />
@@ -381,7 +350,7 @@ const AccountsManager: React.FC = () => {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="text-white/50 text-sm border-b border-white/10">
+                            <tr className="text-theme-muted text-sm border-b border-theme-border">
                                 <th className="p-4">Name</th>
                                 <th className="p-4">Type</th>
                                 <th className="p-4">Category</th>
@@ -392,19 +361,19 @@ const AccountsManager: React.FC = () => {
                         </thead>
                         <tbody>
                             {displayedAccounts.map(acc => (
-                                <tr key={acc.id} className={`border-b border-white/5 hover:bg-white/5 transition-colors ${acc.archived ? 'opacity-50' : ''}`}>
-                                    <td className="p-4 font-medium flex items-center gap-2">
+                                <tr key={acc.id} className={`border-b border-theme-border hover:bg-theme-surface transition-colors ${acc.archived ? 'opacity-50' : ''}`}>
+                                    <td className="p-4 font-medium flex items-center gap-2 text-theme-base">
                                         {acc.name}
                                         {acc.archived && <Badge color="bg-gray-500/20 text-gray-400">Archived</Badge>}
                                     </td>
-                                    <td className="p-4"><Badge color={acc.type === AccountType.OWNER ? 'bg-purple-500/20 text-purple-200' : undefined}>{acc.type}</Badge></td>
-                                    <td className="p-4 text-sm text-white/70">{acc.category || '-'}</td>
-                                    <td className="p-4 text-white/70">{acc.phone}</td>
-                                    <td className="p-4 text-white/70">{acc.address}</td>
+                                    <td className="p-4"><Badge color={acc.type === AccountType.OWNER ? 'bg-purple-500/20 text-purple-800' : undefined}>{acc.type}</Badge></td>
+                                    <td className="p-4 text-sm text-theme-muted">{acc.category || '-'}</td>
+                                    <td className="p-4 text-theme-muted">{acc.phone}</td>
+                                    <td className="p-4 text-theme-muted">{acc.address}</td>
                                     <td className="p-4 text-right flex items-center justify-end gap-2">
                                         <button 
                                             onClick={() => toggleArchive(acc)} 
-                                            className={`p-2 hover:bg-white/10 rounded-full transition-colors ${acc.archived ? 'text-yellow-400 bg-yellow-400/10' : 'text-white/70 hover:text-white'}`}
+                                            className={`p-2 hover:bg-theme-muted/10 rounded-full transition-colors ${acc.archived ? 'text-yellow-500 bg-yellow-400/10' : 'text-theme-muted hover:text-theme-base'}`}
                                             title={acc.archived ? "Unarchive" : "Archive"}
                                         >
                                             <Archive size={16} />
@@ -437,8 +406,8 @@ const AccountsManager: React.FC = () => {
                     <Input label="Address" value={editingAccount?.address || ''} onChange={e => setEditingAccount({...editingAccount!, address: e.target.value})} />
                     
                     {editingAccount?.type === AccountType.EMPLOYEE && (
-                        <div className="p-4 bg-white/5 rounded-lg space-y-3">
-                            <h4 className="text-sm font-semibold">Employee Details</h4>
+                        <div className="p-4 bg-theme-surface rounded-lg space-y-3">
+                            <h4 className="text-sm font-semibold text-theme-base">Employee Details</h4>
                             <Input label="Monthly Salary" type="number" value={editingAccount?.salary || 0} onChange={e => setEditingAccount({...editingAccount!, salary: parseFloat(e.target.value)})} />
                             <Input label="Joining Date" type="date" value={editingAccount?.joiningDate || ''} onChange={e => setEditingAccount({...editingAccount!, joiningDate: e.target.value})} />
                         </div>
@@ -491,43 +460,118 @@ const InvoiceManager: React.FC = () => {
     };
 
     const printInvoice = (t: Transaction) => {
-        const doc = new jsPDF();
         const acc = accounts.find(a => a.id === t.accountId);
+        const printWindow = window.open('', '_blank', 'width=400,height=600');
         
-        doc.setFontSize(22);
-        doc.text(settings.farmName, 105, 20, { align: 'center' });
-        doc.setFontSize(12);
-        doc.text("INVOICE / RECEIPT", 105, 30, { align: 'center' });
-        
-        doc.text(`Bill To: ${acc?.name || 'Walk-in'}`, 14, 45);
-        doc.text(`Date: ${t.date}`, 14, 52);
-        doc.text(`Invoice ID: #${t.id.toUpperCase()}`, 14, 59);
-
-        if (t.items && t.items.length > 0) {
-            autoTable(doc, {
-                startY: 70,
-                head: [['Description', 'Qty', 'Price', 'Total']],
-                body: t.items.map(i => [i.description, i.quantity, i.unitPrice, i.total]),
-            });
-        } else {
-             doc.text(`Type: ${t.type}`, 14, 80);
-             doc.text(`Amount: ${settings.currency}${t.amount}`, 14, 90);
+        if (!printWindow) {
+            alert("Please allow popups to print receipt");
+            return;
         }
 
-        const finalY = (doc as any).lastAutoTable?.finalY || 100;
-        doc.setFontSize(14);
-        doc.text(`Grand Total: ${settings.currency}${t.amount}`, 14, finalY + 20);
-        
-        doc.save(`invoice_${t.id}.pdf`);
+        const dateStr = new Date(t.date).toLocaleDateString();
+
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Receipt #${t.id.substring(0, 6)}</title>
+                <style>
+                    @page { margin: 0; }
+                    body { 
+                        font-family: 'Courier New', Courier, monospace; 
+                        width: 76mm; /* Standard thermal receipt width */
+                        margin: 0 auto; 
+                        padding: 10px 4px;
+                        color: black; 
+                        background: white; 
+                        font-size: 12px;
+                    }
+                    .header { text-align: center; margin-bottom: 15px; }
+                    .title { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+                    .subtitle { font-size: 12px; text-transform: uppercase; }
+                    .divider { border-bottom: 1px dashed #000; margin: 8px 0; }
+                    .row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
+                    
+                    /* Table for items to ensure alignment */
+                    table { width: 100%; border-collapse: collapse; }
+                    th { text-align: left; font-size: 10px; border-bottom: 1px dashed #000; padding-bottom: 4px; text-transform: uppercase; }
+                    td { vertical-align: top; padding: 4px 0; font-size: 12px; }
+                    .col-qty { text-align: center; width: 15%; }
+                    .col-price { text-align: right; width: 20%; }
+                    .col-total { text-align: right; width: 25%; }
+                    .col-desc { text-align: left; width: 40%; }
+                    
+                    .total-section { margin-top: 10px; border-top: 1px dashed #000; padding-top: 8px; }
+                    .total-row { display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; }
+                    .footer { text-align: center; margin-top: 25px; font-size: 10px; color: #333; }
+                    .no-print { display: none; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="title">${settings.farmName}</div>
+                    <div class="subtitle">Sales Receipt</div>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="row"><span>Date:</span> <span>${dateStr}</span></div>
+                <div class="row"><span>Invoice #:</span> <span>${t.id.substring(0, 6).toUpperCase()}</span></div>
+                <div class="row"><span>Customer:</span> <span>${acc?.name || 'Walk-in'}</span></div>
+                
+                <div style="margin-top: 10px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="col-desc">Item</th>
+                                <th class="col-qty">Qty</th>
+                                <th class="col-price">Rate</th>
+                                <th class="col-total">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${(t.items && t.items.length > 0) ? t.items.map(item => `
+                                <tr>
+                                    <td class="col-desc">${item.description}</td>
+                                    <td class="col-qty">${item.quantity}</td>
+                                    <td class="col-price">${item.unitPrice}</td>
+                                    <td class="col-total">${item.total.toLocaleString()}</td>
+                                </tr>
+                            `).join('') : `<tr><td colspan="4">${t.type} - ${t.notes || ''}</td></tr>`}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="total-section">
+                    <div class="total-row">
+                        <span>TOTAL</span>
+                        <span>${settings.currency} ${t.amount.toLocaleString()}</span>
+                    </div>
+                </div>
+                
+                <div class="footer">
+                    <p>Thank you for your business!</p>
+                    <p>Software by EggFlow Pro</p>
+                </div>
+                
+                <script>
+                    window.onload = function() { window.print(); }
+                </script>
+            </body>
+            </html>
+        `;
+
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
     };
 
     const activeAccounts = accounts.filter(a => !a.archived);
 
     return (
         <div className="space-y-6">
-            <div className="flex gap-4 border-b border-white/10 pb-4">
-                <button onClick={() => setActiveTab('sales')} className={`pb-2 px-2 ${activeTab === 'sales' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-white/60'}`}>Sales Invoice</button>
-                <button onClick={() => setActiveTab('history')} className={`pb-2 px-2 ${activeTab === 'history' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-white/60'}`}>Invoice History</button>
+            <div className="flex gap-4 border-b border-theme-border pb-4">
+                <button onClick={() => setActiveTab('sales')} className={`pb-2 px-2 ${activeTab === 'sales' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-theme-muted'}`}>Sales Invoice</button>
+                <button onClick={() => setActiveTab('history')} className={`pb-2 px-2 ${activeTab === 'history' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-theme-muted'}`}>Invoice History</button>
             </div>
 
             {activeTab === 'sales' && (
@@ -540,8 +584,8 @@ const InvoiceManager: React.FC = () => {
                         <Input type="date" label="Date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
                     </div>
 
-                    <div className="bg-white/5 p-4 rounded-xl mb-4">
-                        <h4 className="text-sm font-semibold mb-3 text-white/70 uppercase">Add Items</h4>
+                    <div className="bg-theme-surface p-4 rounded-xl mb-4 border border-theme-border">
+                        <h4 className="text-sm font-semibold mb-3 text-theme-muted uppercase">Add Items</h4>
                         <div className="grid grid-cols-12 gap-2 items-end">
                             <div className="col-span-5"><Input placeholder="Item Description" value={currentItem.description} onChange={e => setCurrentItem({...currentItem, description: e.target.value})} /></div>
                             <div className="col-span-2"><Input type="number" placeholder="Qty" value={currentItem.quantity} onChange={e => setCurrentItem({...currentItem, quantity: parseFloat(e.target.value)})} /></div>
@@ -552,20 +596,20 @@ const InvoiceManager: React.FC = () => {
 
                     <div className="mb-6">
                          <table className="w-full text-left text-sm">
-                            <thead><tr className="border-b border-white/10 text-white/50"><th className="py-2">Item</th><th>Qty</th><th>Price</th><th>Total</th><th></th></tr></thead>
+                            <thead><tr className="border-b border-theme-border text-theme-muted"><th className="py-2">Item</th><th>Qty</th><th>Price</th><th>Total</th><th></th></tr></thead>
                             <tbody>
                                 {formData.items?.map((item, idx) => (
-                                    <tr key={idx} className="border-b border-white/5">
-                                        <td className="py-2">{item.description}</td>
-                                        <td>{item.quantity}</td>
-                                        <td>{item.unitPrice}</td>
-                                        <td>{item.total}</td>
+                                    <tr key={idx} className="border-b border-theme-border">
+                                        <td className="py-2 text-theme-base">{item.description}</td>
+                                        <td className="text-theme-base">{item.quantity}</td>
+                                        <td className="text-theme-base">{item.unitPrice}</td>
+                                        <td className="text-theme-base">{item.total}</td>
                                         <td className="text-right"><button onClick={() => removeItem(idx)} className="text-red-400"><X size={14}/></button></td>
                                     </tr>
                                 ))}
                             </tbody>
                          </table>
-                         <div className="flex justify-between items-center mt-4 text-xl font-bold">
+                         <div className="flex justify-between items-center mt-4 text-xl font-bold text-theme-base">
                              <span>Total</span>
                              <span>{settings.currency}{formData.amount}</span>
                          </div>
@@ -580,17 +624,17 @@ const InvoiceManager: React.FC = () => {
                         {transactions.slice().reverse().map(t => {
                              const acc = accounts.find(a => a.id === t.accountId);
                              return (
-                                <div key={t.id} className="flex justify-between items-center p-3 bg-white/5 rounded-lg border border-white/5">
+                                <div key={t.id} className="flex justify-between items-center p-3 bg-theme-surface rounded-lg border border-theme-border">
                                     <div>
-                                        <div className="font-semibold">{acc?.name || 'Unknown'} <Badge>{t.type}</Badge></div>
-                                        <div className="text-xs text-white/50">{t.date} • #{t.id.substring(0,6)}</div>
+                                        <div className="font-semibold text-theme-base">{acc?.name || 'Unknown'} <Badge>{t.type}</Badge></div>
+                                        <div className="text-xs text-theme-muted">{t.date} • #{t.id.substring(0,6)}</div>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                        <span className={`font-bold ${[TransactionType.SALE, TransactionType.RECEIPT].includes(t.type) ? 'text-green-400' : 'text-red-400'}`}>
+                                        <span className={`font-bold ${[TransactionType.SALE, TransactionType.RECEIPT].includes(t.type) ? 'text-green-500' : 'text-red-500'}`}>
                                             {settings.currency}{t.amount}
                                         </span>
                                         <div className="flex gap-2">
-                                            <button onClick={() => printInvoice(t)} className="p-2 hover:bg-white/10 rounded-full" title="Print POS Receipt"><Printer size={16}/></button>
+                                            <button onClick={() => printInvoice(t)} className="p-2 hover:bg-theme-muted/10 rounded-full text-theme-muted" title="Print POS Receipt"><Printer size={16}/></button>
                                             <DeleteButton onDelete={() => deleteTransaction(t.id)} />
                                         </div>
                                     </div>
@@ -627,101 +671,16 @@ const EggCollectionManager: React.FC = () => {
             <Card title="Recent History" className="max-h-[500px] overflow-y-auto">
                 <div className="space-y-2">
                     {eggCollections.slice().reverse().map(c => (
-                        <div key={c.id} className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                        <div key={c.id} className="flex justify-between items-center p-3 bg-theme-surface rounded-lg border border-theme-border">
                             <div>
-                                <div className="text-sm text-white/60">{c.date}</div>
-                                <div className="font-medium">Collected: {c.collected} | Wasted: <span className="text-red-300">{c.wasted}</span></div>
+                                <div className="text-sm text-theme-muted">{c.date}</div>
+                                <div className="font-medium text-theme-base">Collected: {c.collected} | Wasted: <span className="text-red-500">{c.wasted}</span></div>
                             </div>
                             <DeleteButton onDelete={() => deleteEggCollection(c.id)} />
                         </div>
                     ))}
                 </div>
             </Card>
-        </div>
-    );
-};
-
-const FeedManager: React.FC = () => {
-    const { feedTransactions, addFeedTransaction, deleteFeedTransaction, addTransaction, accounts } = useData();
-    const [entry, setEntry] = useState<Partial<FeedTransaction>>({ 
-        date: new Date().toISOString().split('T')[0], 
-        type: 'Consume',
-        quantity: 0
-    });
-
-    const activeAccounts = accounts.filter(a => !a.archived);
-
-    const currentInventory = feedTransactions.reduce((acc, t) => {
-        if(t.type === 'Purchase') return acc + t.quantity;
-        return acc - t.quantity;
-    }, 0);
-
-    const handleSubmit = () => {
-        addFeedTransaction(entry as FeedTransaction);
-
-        // Auto-add to Ledger if Purchase with Cost and Vendor
-        if (entry.type === 'Purchase' && entry.cost && entry.vendorId && entry.cost > 0) {
-            addTransaction({
-                date: entry.date!,
-                type: TransactionType.PURCHASE,
-                accountId: entry.vendorId,
-                amount: entry.cost,
-                notes: `Feed Purchase: ${entry.quantity}kg`
-            } as Transaction);
-        }
-
-        setEntry({ date: new Date().toISOString().split('T')[0], type: 'Consume', quantity: 0, cost: 0 });
-    };
-
-    return (
-        <div className="space-y-6">
-            <Card className="bg-gradient-to-r from-emerald-900/40 to-teal-900/40 border-teal-500/30">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <p className="text-white/60 text-sm uppercase tracking-wider">Current Feed Stock</p>
-                        <p className="text-4xl font-bold text-white">{currentInventory} <span className="text-lg text-white/50">kg</span></p>
-                    </div>
-                    <Sprout size={48} className="text-teal-400/50" />
-                </div>
-            </Card>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card title="Feed Management">
-                    <div className="space-y-4">
-                         <Select label="Action" value={entry.type} onChange={e => setEntry({...entry, type: e.target.value as any})}>
-                            <option value="Consume" className="text-black">Consume (Feed Birds)</option>
-                            <option value="Purchase" className="text-black">Purchase Stock</option>
-                            <option value="Waste" className="text-black">Record Wastage</option>
-                        </Select>
-                        <Input type="date" label="Date" value={entry.date} onChange={e => setEntry({...entry, date: e.target.value})} />
-                        <Input type="number" label="Quantity (kg)" value={entry.quantity} onChange={e => setEntry({...entry, quantity: parseFloat(e.target.value)})} />
-                        
-                        {entry.type === 'Purchase' && (
-                            <>
-                                <Input type="number" label="Total Cost" value={entry.cost || 0} onChange={e => setEntry({...entry, cost: parseFloat(e.target.value)})} />
-                                <Select label="Vendor" value={entry.vendorId || ''} onChange={e => setEntry({...entry, vendorId: e.target.value})}>
-                                    <option value="" className="text-black">Select Vendor</option>
-                                    {activeAccounts.filter(a => a.type === AccountType.VENDOR).map(a => <option key={a.id} value={a.id} className="text-black">{a.name}</option>)}
-                                </Select>
-                            </>
-                        )}
-                        <Button onClick={handleSubmit} className="w-full">Save Entry</Button>
-                    </div>
-                </Card>
-                <Card title="History">
-                     <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                        {feedTransactions.slice().reverse().map(t => (
-                            <div key={t.id} className="flex justify-between items-center p-3 bg-white/5 rounded-lg border-l-4 border-l-white/20" style={{ borderLeftColor: t.type === 'Purchase' ? '#34d399' : '#f87171' }}>
-                                <div>
-                                    <div className="font-medium">{t.type} {t.quantity}kg</div>
-                                    <div className="text-xs text-white/50">{t.date} {t.cost ? `• Cost: ${t.cost}` : ''}</div>
-                                </div>
-                                <DeleteButton onDelete={() => deleteFeedTransaction(t.id)} />
-                            </div>
-                        ))}
-                    </div>
-                </Card>
-            </div>
         </div>
     );
 };
@@ -863,29 +822,29 @@ const LedgerManager: React.FC = () => {
                 <Card title="Ledger Entries" className="overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
-                            <thead className="text-white/50 border-b border-white/10">
+                            <thead className="text-theme-muted border-b border-theme-border">
                                 <tr>
                                     <th className="p-3">Date</th>
                                     <th className="p-3">Type</th>
                                     <th className="p-3">Description</th>
-                                    <th className="p-3 text-right text-green-300">Debit (+)/Paid</th>
-                                    <th className="p-3 text-right text-red-300">Credit (-)/Due</th>
-                                    <th className="p-3 text-right font-bold">Balance</th>
+                                    <th className="p-3 text-right text-green-500">Debit (+)/Paid</th>
+                                    <th className="p-3 text-right text-red-500">Credit (-)/Due</th>
+                                    <th className="p-3 text-right font-bold text-theme-base">Balance</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr className="bg-white/5 font-medium">
-                                    <td colSpan={5} className="p-3 text-white/70">Opening Balance</td>
-                                    <td className="p-3 text-right">{settings.currency}{ledgerData.openingBalance.toFixed(2)}</td>
+                                <tr className="bg-theme-surface font-medium">
+                                    <td colSpan={5} className="p-3 text-theme-muted">Opening Balance</td>
+                                    <td className="p-3 text-right text-theme-base">{settings.currency}{ledgerData.openingBalance.toFixed(2)}</td>
                                 </tr>
                                 {ledgerData.rows.map(row => (
-                                    <tr key={row.id} className="border-b border-white/5 hover:bg-white/5">
-                                        <td className="p-3">{row.date}</td>
+                                    <tr key={row.id} className="border-b border-theme-border hover:bg-theme-surface">
+                                        <td className="p-3 text-theme-base">{row.date}</td>
                                         <td className="p-3"><Badge>{row.type}</Badge></td>
-                                        <td className="p-3 text-white/70">{row.notes || (row.items && row.items.length > 0 ? row.items[0].description + (row.items.length > 1 ? '...' : '') : '-')}</td>
-                                        <td className="p-3 text-right font-mono text-white/90">{row.debit > 0 ? row.debit : '-'}</td>
-                                        <td className="p-3 text-right font-mono text-white/90">{row.credit > 0 ? row.credit : '-'}</td>
-                                        <td className="p-3 text-right font-mono font-bold text-blue-200">{row.balance.toFixed(2)}</td>
+                                        <td className="p-3 text-theme-muted">{row.notes || (row.items && row.items.length > 0 ? row.items[0].description + (row.items.length > 1 ? '...' : '') : '-')}</td>
+                                        <td className="p-3 text-right font-mono text-theme-base">{row.debit > 0 ? row.debit : '-'}</td>
+                                        <td className="p-3 text-right font-mono text-theme-base">{row.credit > 0 ? row.credit : '-'}</td>
+                                        <td className="p-3 text-right font-mono font-bold text-blue-400">{row.balance.toFixed(2)}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -964,9 +923,9 @@ const CashDrawManager: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card title="Cash Operations">
-                    <div className="flex gap-2 mb-6 bg-black/20 p-1 rounded-xl">
-                        <button onClick={() => setMode('withdraw')} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${mode === 'withdraw' ? 'bg-red-500/80 shadow-lg' : 'hover:bg-white/5 text-white/50'}`}>Withdraw</button>
-                        <button onClick={() => setMode('deposit')} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${mode === 'deposit' ? 'bg-green-500/80 shadow-lg' : 'hover:bg-white/5 text-white/50'}`}>Deposit</button>
+                    <div className="flex gap-2 mb-6 bg-theme-surface p-1 rounded-xl">
+                        <button onClick={() => setMode('withdraw')} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${mode === 'withdraw' ? 'bg-red-500/80 text-white shadow-lg' : 'hover:bg-theme-muted/10 text-theme-muted'}`}>Withdraw</button>
+                        <button onClick={() => setMode('deposit')} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${mode === 'deposit' ? 'bg-green-500/80 text-white shadow-lg' : 'hover:bg-theme-muted/10 text-theme-muted'}`}>Deposit</button>
                     </div>
 
                     <div className="space-y-4">
@@ -994,19 +953,19 @@ const CashDrawManager: React.FC = () => {
                         {cashHistory.map(t => {
                             const owner = accounts.find(a => a.id === t.accountId);
                             return (
-                                <div key={t.id} className="flex justify-between items-center p-3 bg-white/5 rounded-lg border-l-4" style={{ borderLeftColor: t.type === TransactionType.DEPOSIT ? '#22c55e' : '#ef4444' }}>
+                                <div key={t.id} className="flex justify-between items-center p-3 bg-theme-surface rounded-lg border-l-4 border-l-theme-border" style={{ borderLeftColor: t.type === TransactionType.DEPOSIT ? '#22c55e' : '#ef4444' }}>
                                     <div>
-                                        <div className="font-semibold">{t.type}</div>
-                                        <div className="text-xs text-white/50">{t.date} • {owner?.name}</div>
-                                        {t.notes && <div className="text-xs text-white/40 italic">{t.notes}</div>}
+                                        <div className="font-semibold text-theme-base">{t.type}</div>
+                                        <div className="text-xs text-theme-muted">{t.date} • {owner?.name}</div>
+                                        {t.notes && <div className="text-xs text-theme-muted italic">{t.notes}</div>}
                                     </div>
-                                    <span className={`font-mono font-bold ${t.type === TransactionType.DEPOSIT ? 'text-green-400' : 'text-red-400'}`}>
+                                    <span className={`font-mono font-bold ${t.type === TransactionType.DEPOSIT ? 'text-green-500' : 'text-red-500'}`}>
                                         {t.type === TransactionType.DEPOSIT ? '+' : '-'}{settings.currency}{t.amount}
                                     </span>
                                 </div>
                             );
                         })}
-                        {cashHistory.length === 0 && <div className="text-center text-white/30 py-4">No cash movement recorded</div>}
+                        {cashHistory.length === 0 && <div className="text-center text-theme-muted py-4">No cash movement recorded</div>}
                     </div>
                 </Card>
             </div>
@@ -1015,70 +974,86 @@ const CashDrawManager: React.FC = () => {
 };
 
 const SettingsView: React.FC = () => {
-    const { exportData, importData, resetData } = useData();
-    const [showSuccess, setShowSuccess] = useState(false);
+    const { settings, updateSettings, exportData, importData } = useData();
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleDownload = () => {
-        const dataStr = exportData();
-        const blob = new Blob([dataStr], { type: "application/json" });
+    const themes = [
+        { id: 'stained-glass', name: 'iOS Stained Glass', icon: <Sparkles size={20}/>, desc: 'Dark, modern, glassmorphism' },
+        { id: 'windows-xp', name: 'Windows XP Style', icon: <Monitor size={20}/>, desc: 'Retro blue, classic desktop feel' },
+        { id: 'android-16', name: 'Android 16 Style', icon: <Smartphone size={20}/>, desc: 'Material You, rounded, dynamic' },
+    ];
+
+    const handleExport = () => {
+        const data = exportData();
+        const blob = new Blob([data], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `eggflow_backup_${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `eggflow_backup_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
     };
 
-    const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
         const reader = new FileReader();
         reader.onload = (event) => {
             if (event.target?.result) {
-                importData(event.target.result as string);
-                setShowSuccess(true);
-                setTimeout(() => setShowSuccess(false), 3000);
+                try {
+                    importData(event.target.result as string);
+                    alert("Data imported successfully! The page will reload.");
+                    window.location.reload();
+                } catch (err) {
+                    alert("Failed to import data. Invalid format.");
+                }
             }
         };
         reader.readAsText(file);
+        // Reset input to allow same file selection again if needed
+        e.target.value = '';
     };
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
-            {showSuccess && (
-                <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-xl shadow-2xl animate-in slide-in-from-top z-50">
-                    Import Successful!
-                </div>
-            )}
-            <Card title="Data Management">
-                <div className="space-y-8">
-                    <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                        <h4 className="font-semibold mb-2 flex items-center gap-2"><Download size={18}/> Export Data</h4>
-                        <p className="text-sm text-white/60 mb-4">Download a JSON backup of all your accounts and transactions.</p>
-                        <Button onClick={handleDownload} className="w-full">Download JSON Backup</Button>
-                    </div>
-
-                    <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                        <h4 className="font-semibold mb-2 flex items-center gap-2"><Upload size={18}/> Import Data</h4>
-                        <p className="text-sm text-white/60 mb-4">Restore data from a previously exported JSON file.</p>
-                        <div className="relative">
-                            <input 
-                                type="file" 
-                                accept=".json"
-                                onChange={handleFileImport}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            />
-                            <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center hover:bg-white/5 transition-colors">
-                                <span className="text-blue-300">Click to upload JSON file</span>
+            <Card title="Appearance">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {themes.map(t => (
+                        <button
+                            key={t.id}
+                            onClick={() => updateSettings({ theme: t.id as any })}
+                            className={`p-4 rounded-xl border flex flex-col items-center text-center gap-3 transition-all ${settings.theme === t.id ? 'bg-blue-500/20 border-blue-500 ring-2 ring-blue-500/30' : 'bg-theme-surface border-theme-border hover:bg-theme-muted/10'}`}
+                        >
+                            <div className={settings.theme === t.id ? 'text-blue-400' : 'text-theme-muted'}>{t.icon}</div>
+                            <div>
+                                <div className={`font-bold ${settings.theme === t.id ? 'text-blue-400' : 'text-theme-base'}`}>{t.name}</div>
+                                <div className="text-xs text-theme-muted mt-1">{t.desc}</div>
                             </div>
-                        </div>
-                    </div>
-                    
-                    <div className="pt-4 border-t border-white/10">
-                        <Button variant="danger" onClick={() => { if(confirm('Are you sure? This deletes everything.')) resetData() }}>Factory Reset App</Button>
-                    </div>
+                        </button>
+                    ))}
                 </div>
+            </Card>
+
+            <Card title="Data Backup & Restore">
+                <div className="flex flex-col sm:flex-row gap-4">
+                    <Button onClick={handleExport} className="flex-1 flex items-center justify-center gap-2">
+                        <Download size={18} /> Export Backup (JSON)
+                    </Button>
+                    <Button onClick={() => fileInputRef.current?.click()} className="flex-1 flex items-center justify-center gap-2" variant="secondary">
+                        <Upload size={18} /> Import Backup (JSON)
+                    </Button>
+                    <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleImport} 
+                        accept=".json" 
+                        className="hidden" 
+                    />
+                </div>
+                <p className="text-xs text-theme-muted mt-3">
+                    Export your data regularly to prevent data loss. Importing will overwrite current data.
+                </p>
             </Card>
         </div>
     )
@@ -1090,34 +1065,33 @@ const App: React.FC = () => {
   const [activeView, setActiveView] = useState('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // REMOVED 'expenses' from navItems as requested
   const navItems = [
       { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
       { id: 'collection', label: 'Collection', icon: <Egg size={20} /> },
       { id: 'invoices', label: 'Sales & Invoices', icon: <ShoppingCart size={20} /> },
       { id: 'ledger', label: 'Ledger', icon: <BookOpen size={20} /> },
       { id: 'cash', label: 'Cash Draw', icon: <Wallet size={20} /> },
-      { id: 'feed', label: 'Feed & Stock', icon: <Sprout size={20} /> },
       { id: 'accounts', label: 'Accounts', icon: <Users size={20} /> },
       { id: 'settings', label: 'Settings', icon: <SettingsIcon size={20} /> },
   ];
 
   return (
     <DataProvider>
-      <div className="min-h-screen flex text-white font-sans selection:bg-blue-500/30">
+      <ThemeHandler />
+      <div className="min-h-screen flex font-sans selection:bg-blue-500/30">
         
         {/* Sidebar */}
-        <aside className={`fixed inset-y-0 left-0 z-40 w-64 glass-panel transform transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static md:block border-r-0 md:border-r`}>
+        <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-theme-surface backdrop-blur-md border-r border-theme-border transform transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static md:block`}>
             <div className="p-6 flex justify-between items-center">
-                <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">EggFlow</h1>
-                <button onClick={() => setMobileMenuOpen(false)} className="md:hidden"><X /></button>
+                <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">EggFlow</h1>
+                <button onClick={() => setMobileMenuOpen(false)} className="md:hidden text-theme-base"><X /></button>
             </div>
             <nav className="px-4 space-y-2 mt-4">
                 {navItems.map(item => (
                     <button
                         key={item.id}
                         onClick={() => { setActiveView(item.id); setMobileMenuOpen(false); }}
-                        className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-200 ${activeView === item.id ? 'bg-white/10 shadow-lg shadow-white/5 font-semibold text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}
+                        className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-200 ${activeView === item.id ? 'bg-theme-muted/10 shadow-lg shadow-black/5 font-semibold text-theme-base' : 'text-theme-muted hover:bg-theme-muted/5 hover:text-theme-base'}`}
                     >
                         {item.icon}
                         <span>{item.label}</span>
@@ -1128,10 +1102,10 @@ const App: React.FC = () => {
 
         {/* Main Content */}
         <main className="flex-1 overflow-x-hidden overflow-y-auto">
-            <header className="sticky top-0 z-30 flex items-center justify-between p-4 md:p-6 glass-panel border-b border-white/5 border-t-0 border-x-0 bg-transparent backdrop-blur-md">
+            <header className="sticky top-0 z-30 flex items-center justify-between p-4 md:p-6 bg-theme-surface/80 backdrop-blur-md border-b border-theme-border">
                 <div className="flex items-center gap-4">
-                    <button onClick={() => setMobileMenuOpen(true)} className="md:hidden p-2 hover:bg-white/10 rounded-lg"><Menu /></button>
-                    <h2 className="text-xl font-semibold capitalize">{activeView === 'cash' ? 'Cash Draw' : activeView}</h2>
+                    <button onClick={() => setMobileMenuOpen(true)} className="md:hidden p-2 hover:bg-theme-muted/10 rounded-lg text-theme-base"><Menu /></button>
+                    <h2 className="text-xl font-semibold capitalize text-theme-base">{activeView === 'cash' ? 'Cash Draw' : activeView}</h2>
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-400 to-purple-500 shadow-inner"></div>
@@ -1145,7 +1119,6 @@ const App: React.FC = () => {
                 {activeView === 'ledger' && <LedgerManager />}
                 {activeView === 'cash' && <CashDrawManager />}
                 {activeView === 'accounts' && <AccountsManager />}
-                {activeView === 'feed' && <FeedManager />}
                 {activeView === 'settings' && <SettingsView />}
             </div>
         </main>
@@ -1153,5 +1126,40 @@ const App: React.FC = () => {
     </DataProvider>
   );
 };
+
+const ThemeHandler: React.FC = () => {
+    const { settings } = useData();
+    
+    useEffect(() => {
+        const root = document.documentElement;
+        const body = document.body;
+
+        if (settings.theme === 'windows-xp') {
+            body.style.background = 'url(https://i.imgur.com/Zk6TR5k.jpg) center center/cover fixed no-repeat, #245edb';
+            root.style.setProperty('--text-base', '#000000');
+            root.style.setProperty('--text-muted', '#444444');
+            root.style.setProperty('--bg-surface', '#FFFFFF');
+            root.style.setProperty('--bg-panel', '#ECE9D8');
+            root.style.setProperty('--border-color', '#003c74');
+        } else if (settings.theme === 'android-16') {
+            body.style.background = '#f2f0f4';
+            root.style.setProperty('--text-base', '#1a1c1e');
+            root.style.setProperty('--text-muted', '#444746');
+            root.style.setProperty('--bg-surface', '#ffffff');
+            root.style.setProperty('--bg-panel', '#F3F4F6');
+            root.style.setProperty('--border-color', '#E0E2E5');
+        } else {
+            // Stained Glass
+            body.style.background = 'linear-gradient(135deg, #1a1c2c 0%, #4a192c 50%, #1f1f45 100%)';
+            root.style.setProperty('--text-base', '#ffffff');
+            root.style.setProperty('--text-muted', 'rgba(255,255,255,0.6)');
+            root.style.setProperty('--bg-surface', 'rgba(255,255,255,0.05)');
+            root.style.setProperty('--bg-panel', 'rgba(0,0,0,0.2)');
+            root.style.setProperty('--border-color', 'rgba(255,255,255,0.1)');
+        }
+    }, [settings.theme]);
+
+    return null;
+}
 
 export default App;

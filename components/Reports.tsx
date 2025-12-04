@@ -9,7 +9,7 @@ import { Share2, FileText } from 'lucide-react';
 import { TransactionType } from '../types';
 
 export const Reports: React.FC = () => {
-  const { eggCollections, feedTransactions, transactions, settings } = useData();
+  const { eggCollections, transactions, settings } = useData();
   const [dateRange, setDateRange] = useState({
     start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0],
@@ -38,14 +38,6 @@ export const Reports: React.FC = () => {
     const eggsSold = transactions.filter(t => t.type === TransactionType.SALE && isInRange(t.date)).reduce((acc, t) => acc + (t.items?.reduce((s, i) => s + i.quantity, 0) || 0), 0);
     const eggsClosing = eggsOpening + eggsCollected - eggsWasted - eggsSold;
 
-    // Feed
-    const feedOpening = feedTransactions.filter(t => isBeforeRange(t.date)).reduce((acc, t) => 
-      t.type === 'Purchase' ? acc + t.quantity : acc - t.quantity, 0);
-    const feedPurchased = feedTransactions.filter(t => t.type === 'Purchase' && isInRange(t.date)).reduce((acc, t) => acc + t.quantity, 0);
-    const feedConsumed = feedTransactions.filter(t => t.type === 'Consume' && isInRange(t.date)).reduce((acc, t) => acc + t.quantity, 0);
-    const feedWasted = feedTransactions.filter(t => t.type === 'Waste' && isInRange(t.date)).reduce((acc, t) => acc + t.quantity, 0);
-    const feedClosing = feedOpening + feedPurchased - feedConsumed - feedWasted;
-
     // Cash
     const cashOpening = transactions.filter(t => isBeforeRange(t.date)).reduce((acc, t) => {
         if ([TransactionType.SALE, TransactionType.RECEIPT, TransactionType.DEPOSIT].includes(t.type)) return acc + t.amount;
@@ -60,11 +52,10 @@ export const Reports: React.FC = () => {
 
     return {
         eggs: { opening: eggsOpening, collected: eggsCollected, wasted: eggsWasted, sold: eggsSold, closing: eggsClosing },
-        feed: { opening: feedOpening, purchased: feedPurchased, consumed: feedConsumed, wasted: feedWasted, closing: feedClosing },
         cash: { opening: cashOpening, in: cashIn, out: cashOut, withdrawn: withdrawals, closing: cashClosing },
         salesRevenue: transactions.filter(t => t.type === TransactionType.SALE && isInRange(t.date)).reduce((acc, t) => acc + t.amount, 0)
     };
-  }, [eggCollections, feedTransactions, transactions, dateRange]);
+  }, [eggCollections, transactions, dateRange]);
 
   // --- Graph Data (Last 7 Days) ---
   const graphData = useMemo(() => {
@@ -99,10 +90,6 @@ export const Reports: React.FC = () => {
         ['Wasted', reportData.eggs.wasted],
         ['Sold', reportData.eggs.sold],
         ['Closing Stock', reportData.eggs.closing],
-        ['--- FEED ---', ''],
-        ['Purchased (kg)', reportData.feed.purchased],
-        ['Consumed (kg)', reportData.feed.consumed],
-        ['Closing Stock (kg)', reportData.feed.closing],
         ['--- CASH ---', ''],
         ['Opening Cash', `${settings.currency}${reportData.cash.opening}`],
         ['Cash In', `${settings.currency}${reportData.cash.in}`],
@@ -133,12 +120,6 @@ export const Reports: React.FC = () => {
         `• Wasted: ${reportData.eggs.wasted}`,
         `• Sold: ${reportData.eggs.sold}`,
         `• Closing Stock: ${reportData.eggs.closing}`,
-        "",
-        "🌾 *FEED INVENTORY*",
-        `• Purchased: ${reportData.feed.purchased} kg`,
-        `• Consumed: ${reportData.feed.consumed} kg`,
-        `• Wasted: ${reportData.feed.wasted} kg`,
-        `• Closing Stock: ${reportData.feed.closing} kg`,
         "",
         "💵 *CASH FLOW*",
         `• Opening Cash: ${settings.currency}${reportData.cash.opening.toFixed(2)}`,

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -5,15 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>EggFlow Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
         theme: {
           extend: {
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
+              tahoma: ['Tahoma', 'Verdana', 'sans-serif'],
+              roboto: ['Roboto', 'sans-serif'],
             },
             colors: {
+              theme: {
+                base: 'var(--text-base)',
+                muted: 'var(--text-muted)',
+                surface: 'var(--bg-surface)',
+                panel: 'var(--bg-panel)',
+                border: 'var(--border-color)',
+                primary: 'var(--primary-color)',
+                'primary-hover': 'var(--primary-hover)',
+              },
               glass: {
                 100: 'rgba(255, 255, 255, 0.1)',
                 200: 'rgba(255, 255, 255, 0.2)',
@@ -29,17 +41,31 @@
     </script>
     <style>
       body {
-        background: linear-gradient(135deg, #1a1c2c 0%, #4a192c 50%, #1f1f45 100%);
-        background-attachment: fixed;
-        color: white;
+        /* Default background (will be overridden by JS) */
+        background: #1a1c2c; 
+        color: var(--text-base);
+        transition: background 0.3s ease;
       }
+      
       .glass-panel {
-        background: rgba(255, 255, 255, 0.05);
+        background: var(--bg-surface);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--border-color);
         box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
       }
+
+      /* Windows XP Specifics */
+      .xp-window {
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+        border-radius: 8px 8px 0 0;
+      }
+      .xp-header {
+        background: linear-gradient(180deg, #0058EE 0%, #3593FF 4%, #288EFF 18%, #127DFF 44%, #0369FC 100%);
+        border-radius: 6px 6px 0 0;
+        text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+      }
+
       /* Custom Scrollbar */
       ::-webkit-scrollbar {
         width: 8px;
